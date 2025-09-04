@@ -5,7 +5,7 @@ import com.crudapp.filestorage.model.Event;
 import java.util.List;
 
 public interface EventService {
-    Event record(long userId, long fileId, String type); // "UPLOAD"/"DOWNLOAD"
+    Event record(long userId, long fileId, String type);
     List<Event> forUser(long userId, int offset, int limit);
     List<Event> forFile(long fileId, int offset, int limit);
     long purgeForUser(long userId);

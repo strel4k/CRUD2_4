@@ -1,0 +1,22 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs / dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# Jetty / tmp
+.jetty/
