@@ -1,4 +1,9 @@
 package com.crudapp.filestorage.repository;
 
-public class FileRepository {
+import com.crudapp.filestorage.model.FileEntity;
+
+import java.util.Optional;
+
+public interface FileRepository extends CrudRepository<FileEntity, Long> {
+    Optional<FileEntity> findByPath(String filePath);
 }

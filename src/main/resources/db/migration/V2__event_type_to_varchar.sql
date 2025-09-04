@@ -1,0 +1,2 @@
+ALTER TABLE events
+  MODIFY COLUMN event_type VARCHAR(16) NULL;

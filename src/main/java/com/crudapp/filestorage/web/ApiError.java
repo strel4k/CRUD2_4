@@ -1,4 +1,4 @@
 package com.crudapp.filestorage.web;
 
-public class ApiError {
+public record ApiError(String message) {
 }

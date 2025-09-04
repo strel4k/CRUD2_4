@@ -1,0 +1,86 @@
+{
+  "info": {
+    "name": "File Storage API",
+    "_postman_id": "7a2a3d0e-1b7e-4b6b-9a51-1234567890ab",
+    "description": "CRUD Users, Files (multipart), Events",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Users - list",
+      "request": { "method": "GET", "header": [], "url": "http://localhost:8080/api/users" }
+    },
+    {
+      "name": "Users - create",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"name\":\"Alice\"}" },
+        "url": "http://localhost:8080/api/users"
+      }
+    },
+    {
+      "name": "Users - get {id}",
+      "request": { "method": "GET", "header": [], "url": "http://localhost:8080/api/users/1" }
+    },
+    {
+      "name": "Users - update {id}",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"name\":\"Alice Updated\"}" },
+        "url": "http://localhost:8080/api/users/1"
+      }
+    },
+    {
+      "name": "Users - delete {id}",
+      "request": { "method": "DELETE", "header": [], "url": "http://localhost:8080/api/users/1" }
+    },
+    {
+      "name": "Files - list",
+      "request": { "method": "GET", "header": [], "url": "http://localhost:8080/api/files" }
+    },
+    {
+      "name": "Files - upload (multipart)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "file", "type": "file", "src": "" }
+          ]
+        },
+        "url": "http://localhost:8080/api/files?userId=1"
+      }
+    },
+    {
+      "name": "Files - metadata {id}",
+      "request": { "method": "GET", "header": [], "url": "http://localhost:8080/api/files/1" }
+    },
+    {
+      "name": "Files - download {id}/content",
+      "request": { "method": "GET", "header": [], "url": "http://localhost:8080/api/files/1/content?userId=1" }
+    },
+    {
+      "name": "Files - delete {id}",
+      "request": { "method": "DELETE", "header": [], "url": "http://localhost:8080/api/files/1" }
+    },
+    {
+      "name": "Events - by user",
+      "request": { "method": "GET", "header": [], "url": "http://localhost:8080/api/events?userId=1" }
+    },
+    {
+      "name": "Events - by file",
+      "request": { "method": "GET", "header": [], "url": "http://localhost:8080/api/events?fileId=1" }
+    },
+    {
+      "name": "Events - purge by user (admin/test)",
+      "request": { "method": "DELETE", "header": [], "url": "http://localhost:8080/api/events?userId=1" }
+    },
+    {
+      "name": "Events - purge by file (admin/test)",
+      "request": { "method": "DELETE", "header": [], "url": "http://localhost:8080/api/events?fileId=1" }
+    }
+  ]
+}

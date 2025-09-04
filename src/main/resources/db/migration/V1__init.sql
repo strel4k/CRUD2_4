@@ -19,15 +19,15 @@ CREATE TABLE IF NOT EXISTS events (
   user_id BIGINT NOT NULL,
   file_id BIGINT NOT NULL,
 
-  event_type ENUM('UPLOAD','DOWNLOAD') NULL,
+CREATE TABLE events (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  file_id BIGINT NOT NULL,
+  event_type VARCHAR(16) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_events_user
-    FOREIGN KEY (user_id) REFERENCES users(id)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
-  CONSTRAINT fk_events_file
-    FOREIGN KEY (file_id) REFERENCES files(id)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  CONSTRAINT fk_events_user FOREIGN KEY (user_id) REFERENCES users(id),
+  CONSTRAINT fk_events_file FOREIGN KEY (file_id) REFERENCES files(id)
+);
 
 
 CREATE INDEX idx_users_created_at  ON users (created_at);

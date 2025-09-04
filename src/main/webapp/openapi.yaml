@@ -1,267 +1,427 @@
 openapi: 3.0.3
 info:
-  title: File Storage Apo
-  version: 1.0.0
-  description: REST API для пользователей, файлов и истории событий (загрузка/скачивание).
-  servers:
-    - url: http://localhost:8080
-  paths:
-    /api/users:
-      get:
-        summary: Список пользователей
-        parameters:
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, default: 50 }
-        responses:
-          '200':
-            description: OK
-            content:
-              application/json:
-                schema: { type: array, items: { $ref: '#/components/schemas/User' } }
-      post:
-        summary: Создать пользователя
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/CreateUserRequest' }
-        responses:
-          '201':
-            description: Created
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/User' }
-          '400':
-            description: Bad Request
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/ApiError' }
-    /api/users/{id}:
-      get:
-        summary: Получить пользователя по id
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: integer, format: int64 }
-        responses:
-          '200':
-            description: OK
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/User' }
-          '404':
-            description: Not Found
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/ApiError' }
-      put:
-        summary: Переименовать пользователя
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: integer, format: int64 }
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/CreateUserRequest' }
-        responses:
-          '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
-          '400': { description: Bad Request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      delete:
-        summary: Удалить пользователя
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: integer, format: int64 }
-        responses:
-          '204': { description: No Content }
-          '409': { description: Conflict (есть события), content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+  title: File Storage API
+  version: "1.0.0"
+  description: |
+    REST API для файлового хранилища с историей операций (events).
+    Технологии: Java, Servlets, Hibernate (аннотации), MySQL, Flyway, Maven, Swagger.
 
-    /api/files:
-      get:
-        summary: Список файлов (метаданные)
-        parameters:
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, default: 50 }
-        responses:
-          '200':
-            description: OK
-            content:
-              application/json:
-                schema: { type: array, items: { $ref: '#/components/schemas/FileEntity' } }
-      post:
-        summary: Загрузить файл (multipart)
-        parameters:
-          - in: query
-            name: userId
-            description: Если указан — будет записано событие UPLOAD
-            schema: { type: integer, format: int64 }
-        requestBody:
-          required: true
+servers:
+  - url: http://localhost:8080
+    description: Local Jetty
+
+tags:
+  - name: Users
+  - name: Files
+  - name: Events
+  - name: System
+
+paths:
+  /api/users:
+    get:
+      tags: [Users]
+      summary: Список пользователей
+      parameters:
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: OK
           content:
-            multipart/form-data:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/User' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    post:
+      tags: [Users]
+      summary: Создать пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/users/{id}:
+    get:
+      tags: [Users]
+      summary: Получить пользователя по id
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    put:
+      tags: [Users]
+      summary: Обновить пользователя
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    delete:
+      tags: [Users]
+      summary: Удалить пользователя
+      description: Удаление запрещено, если есть связанные события (возвращает 409).
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Conflict (FK constraint)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/files:
+    get:
+      tags: [Files]
+      summary: Список файлов
+      parameters:
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FileEntity' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    post:
+      tags: [Files]
+      summary: Загрузить файл (multipart)
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+          description: Если указан — будет создан event типа UPLOAD.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileEntity' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/files/{id}:
+    get:
+      tags: [Files]
+      summary: Метаданные файла
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileEntity' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    put:
+      tags: [Files]
+      summary: Переименовать файл
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileEntity' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    delete:
+      tags: [Files]
+      summary: Удалить файл
+      description: Удаление запрещено, если есть связанные события (возвращает 409).
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Conflict (FK constraint)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/files/{id}/content:
+    get:
+      tags: [Files]
+      summary: Скачать содержимое файла
+      parameters:
+        - $ref: '#/components/parameters/id'
+        - name: userId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+          description: Если указан — будет создан event типа DOWNLOAD.
+      responses:
+        '200':
+          description: OK (binary)
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+              description: attachment; filename=...
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/events:
+    get:
+      tags: [Events]
+      summary: Список событий по пользователю или файлу
+      description: Требуется **userId** или **fileId**.
+      parameters:
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - name: userId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+        - name: fileId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    post:
+      tags: [Events]
+      summary: Создать событие вручную
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, fileId, eventType]
+              properties:
+                userId: { type: integer, format: int64 }
+                fileId: { type: integer, format: int64 }
+                eventType:
+                  type: string
+                  enum: [UPLOAD, DOWNLOAD]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    delete:
+      tags: [Events]
+      summary: Массовое удаление событий (purge)
+      description: Удалить все события по `userId` или `fileId`.
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+        - name: fileId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
               schema:
                 type: object
-                required: [ file ]
                 properties:
-                  file:
-                    type: string
-                    format: binary
-        responses:
-          '201':
-            description: Created
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/FileEntity' }
-          '400':
-            description: Bad Request
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/ApiError' }
-    /api/files/{id}:
-      get:
-        summary: Метаданные файла по id
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: integer, format: int64 }
-        responses:
-          '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/FileEntity' } } } }
-          '404': { description: Not Found, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      delete:
-        summary: Удалить файл (если нет событий)
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: integer, format: int64 }
-        responses:
-          '204': { description: No Content }
-          '409': { description: Conflict, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+                  deleted: { type: integer, minimum: 0 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
 
-    /api/files/{id}/content:
-      get:
-        summary: Скачать содержимое файла
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: integer, format: int64 }
-          - in: query
-            name: userId
-            description: Если указан — будет записано событие DOWNLOAD
-            schema: { type: integer, format: int64 }
-        responses:
-          '200':
-            description: OK (application/octet-stream)
-            content:
-              application/octet-stream:
-                schema: { type: string, format: binary }
-          '404':
-            description: Not Found
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/ApiError' }
+  /api/events/{id}:
+    get:
+      tags: [Events]
+      summary: Получить событие по id
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    put:
+      tags: [Events]
+      summary: Обновить тип события
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventType]
+              properties:
+                eventType:
+                  type: string
+                  enum: [UPLOAD, DOWNLOAD]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    delete:
+      tags: [Events]
+      summary: Удалить событие по id
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
 
-    /api/events:
-      get:
-        summary: История событий по пользователю или файлу
-        parameters:
-          - in: query
-            name: userId
-            schema: { type: integer, format: int64 }
-          - in: query
-            name: fileId
-            schema: { type: integer, format: int64 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, default: 50 }
-        responses:
-          '200':
-            description: OK
-            content:
-              application/json:
-                schema: { type: array, items: { $ref: '#/components/schemas/Event' } }
-          '400':
-            description: Нужен userId или fileId
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/ApiError' }
-      delete:
-        summary: Удалить события по пользователю или по файлу (для тестов/админ)
-        parameters:
-          - in: query
-            name: userId
-            schema: { type: integer, format: int64 }
-          - in: query
-            name: fileId
-            schema: { type: integer, format: int64 }
-        responses:
-          '200':
-            description: Deleted count
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    deleted: { type: integer }
-          '400':
-            description: Нужен userId или fileId
-            content:
-              application/json:
-                schema: { $ref: '#/components/schemas/ApiError' }
+components:
+  parameters:
+    id:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    offset:
+      in: query
+      name: offset
+      required: false
+      schema: { type: integer, minimum: 0, default: 0 }
+    limit:
+      in: query
+      name: limit
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
 
-  components:
-    schemas:
-      ApiError:
-        type: object
-        properties:
-          message: { type: string }
-      CreateUserRequest:
-        type: object
-        required: [ name ]
-        properties:
-          name: { type: string, minLength: 1 }
-      User:
-        type: object
-        properties:
-          id: { type: integer, format: int64 }
-          name: { type: string }
-          createdAt:
-            type: string
-            format: date-time
-      FileEntity:
-        type: object
-        properties:
-          id: { type: integer, format: int64 }
-          name: { type: string }
-          filePath: { type: string }
-          createdAt:
-            type: string
-            format: date-time
-      Event:
-        type: object
-        properties:
-          id: { type: integer, format: int64 }
-          eventType: { type: string, nullable: true, enum: [ UPLOAD, DOWNLOAD ] }
-          userId: { type: integer, format: int64 }
-          fileId: { type: integer, format: int64 }
-          createdAt:
-            type: string
-            format: date-time
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        message: { type: string }
+
+    User:
+      type: object
+      properties:
+        id:        { type: integer, format: int64 }
+        name:      { type: string }
+        createdAt: { type: string, format: date-time }
+
+    FileEntity:
+      type: object
+      properties:
+        id:        { type: integer, format: int64 }
+        name:      { type: string }
+        filePath:  { type: string }
+        createdAt: { type: string, format: date-time }
+
+    Event:
+      type: object
+      properties:
+        id:        { type: integer, format: int64 }
+        userId:    { type: integer, format: int64 }
+        fileId:    { type: integer, format: int64 }
+        eventType:
+          type: string
+          enum: [UPLOAD, DOWNLOAD]
+        createdAt: { type: string, format: date-time }
